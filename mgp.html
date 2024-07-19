@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de MGP </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .subject {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .subject input, .subject select {
+            flex: 1;
+            margin-left: 10px;
+            padding: 5px;
+        }
+
+        .subject input[name="name"] {
+            flex: 2;
+        }
+
+        .subject input.error, .subject select.error {
+            border: 2px solid red;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .conversion {
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .add-subject {
+            margin-bottom: 20px;
+        }
+
+        .remove-button {
+            color: red;
+            cursor: pointer;
+            font-size: 20px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculateur de MGP by @scofield1h</h1>
+        <h4>la petite croix rouge permet de supprimer une case</h4>
+        <div class="add-subject">
+            <button type="button" onclick="addSubject()">Ajouter une matière</button>
+        </div>
+        <form id="gradeForm">
+            <div id="subjects">
+                <!-- Les matières seront ajoutées ici -->
+            </div>
+            <button type="button" onclick="calculateMGP()">Calculer MGP</button>
+        </form>
+        <div id="result">
+            <h2>Résultat</h2>
+            <p id="mgp">MGP: 0.00</p>
+            <p id="moyenne">Moyenne: 0.00</p>
+            <p id="mention">Mention: N/A</p>
+        </div>
+    </div>
+    <script>
+        function getPoints(note) {
+            if (note >= 0 && note < 35) return 0.00;
+            if (note >= 35 && note < 40) return 1.00;
+            if (note >= 40 && note < 45) return 1.30;
+            if (note >= 45 && note < 50) return 1.70;
+            if (note >= 50 && note < 55) return 2.00;
+            if (note >= 55 && note < 60) return 2.30;
+            if (note >= 60 && note < 65) return 2.70;
+            if (note >= 65 && note < 70) return 3.00;
+            if (note >= 70 && note < 75) return 3.30;
+            if (note >= 75 && note < 80) return 3.70;
+            if (note >= 80 && note <= 100) return 4.00;
+            return 0.00;
+        }
+
+        function updateConversion(input) {
+            const note = parseFloat(input.value);
+            const conversionElement = input.parentElement.querySelector('.conversion');
+            const points = getPoints(note);
+            conversionElement.textContent = isNaN(points) ? '' : `Points: ${points.toFixed(2)}`;
+        }
+
+        function addSubject() {
+            const subjectsDiv = document.getElementById('subjects');
+            const subjectCount = subjectsDiv.children.length + 1;
+
+            const subjectDiv = document.createElement('div');
+            subjectDiv.className = 'subject';
+            subjectDiv.innerHTML = `
+                <input type="text" name="name" placeholder="Nom de la matière ${subjectCount}">
+                <input type="number" step="0.01" placeholder="Note" class="note" oninput="updateConversion(this)">
+                <select class="credit">
+                    <option value="3">3</option>
+                    <option value="6">6</option>
+                </select>
+                <span class="conversion"></span>
+                <span class="remove-button" onclick="removeSubject(this)">&#10006;</span>
+            `;
+            subjectsDiv.appendChild(subjectDiv);
+        }
+
+        function removeSubject(button) {
+            const subjectDiv = button.parentElement;
+            subjectDiv.remove();
+        }
+
+        function validateForm() {
+            const notes = document.querySelectorAll('.note');
+            const names = document.querySelectorAll('input[name="name"]');
+            let valid = true;
+
+            notes.forEach(note => {
+                if (!note.value || note.value < 0 || note.value > 100) {
+                    note.classList.add('error');
+                    valid = false;
+                } else {
+                    note.classList.remove('error');
+                }
+            });
+
+            names.forEach(name => {
+                if (!name.value.trim()) {
+                    name.classList.add('error');
+                    valid = false;
+                } else {
+                    name.classList.remove('error');
+                }
+            });
+
+            return valid;
+        }
+
+        function calculateMGP() {
+            if (!validateForm()) {
+                alert("Veuillez remplir toutes les cases correctement.");
+                return;
+            }
+
+            const notes = document.querySelectorAll('.note');
+            const credits = document.querySelectorAll('.credit');
+            let totalPoints = 0;
+            let totalCredits = 0;
+
+            notes.forEach((note, index) => {
+                const credit = parseFloat(credits[index].value);
+                const noteValue = parseFloat(note.value);
+                const point = getPoints(noteValue);
+                totalPoints += point * credit;
+                totalCredits += credit;
+            });
+
+            const mgp = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 0;
+            const moyenne = (mgp * 5).toFixed(2);
+            let mention = "N/A";
+
+            if (moyenne < 10) mention = "Échec";
+            else if (moyenne < 12) mention = "Passable";
+            else if (moyenne < 14) mention = "Assez Bien";
+            else if (moyenne < 16) mention = "Bien";
+            else if (moyenne < 18) mention = "Très Bien";
+            else mention = "Excellent";
+
+            document.getElementById('mgp').textContent = `MGP: ${mgp}`;
+            document.getElementById('moyenne').textContent = `Moyenne: ${moyenne}`;
+            document.getElementById('mention').textContent = `Mention: ${mention}`;
+        }
+    </script>
+</body>
+</html>
